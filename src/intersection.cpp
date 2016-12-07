@@ -8,6 +8,7 @@
 using namespace cv;
 using namespace std;
 
+
 void process(const char* imsname, int thmag){
 	Mat img = imread(imsname, 0);
 	int cols = img.cols; 
@@ -15,32 +16,66 @@ void process(const char* imsname, int thmag){
 	if(img.empty()){
 		cerr << "can not open " << imsname << endl;
     }
-     
-    Mat dst, cdst;
-	Canny(img, dst, 50, 200, 3);
-	cvtColor(dst, cdst, CV_GRAY2BGR);
-
-	Mat accumulator((int)sqrt(rows*rows+cols*cols),CV_PI,0,Scalar(0));
-    vector<Vec2f> lines;
-	HoughLines(dst, lines, 1, CV_PI/180, thmag, 0, 0 );
-
-	for( size_t i = 0; i < lines.size(); i++ )
-	{
-	   float rho = lines[i][0], theta = lines[i][1];
-	   accumulator.at<uchar>(rho,theta)++;
-	   Point pt1, pt2;
-	   double a = cos(theta), b = sin(theta);
-	   double x0 = a*rho, y0 = b*rho;
-	   pt1.x = x0 + 1000*(-b);
-	   pt1.y = y0 + 1000*(a);
-	   pt2.x = x0 - 1000*(-b);
-	   pt2.y = y0 - 1000*(a);
-	   line( cdst, pt1, pt2, Scalar(0,0,255), 3, CV_AA);
-	}
+    
 	imshow("source", img);
-	imshow("lignes detectees", cdst);
-	imshow("contours", dst);
+    Mat houghImg(rows,cols,CV_8UC3,Scalar(0,0,0));
+    int mn = (int) sqrt(cols*cols + rows*rows);
+    Mat accumulator(mn, 180, 0,Scalar(0));
+
+    for (int i = 0; i<rows; i++){
+    	for(int j = 0; j<cols; j++){
+    		if (img.at<uchar>(i,j)>thmag){
+    			for (int th = 0; th<180; th++){
+    				int rho = abs(i*cos(th*CV_PI/180.0)+j*sin(th*CV_PI/180.0));
+    				accumulator.at<uchar>(rho,th)++;
+    			}
+    		}
+    	}
+    }
+
 	imshow("accumulateur", accumulator);
+
+    vector<int> maxs;
+    vector<int> rhoMaxs;
+    vector<int> thMaxs;
+
+    // Handmade thresholding of accumulator 
+    for (int i = 0; i<mn; i++){
+    	for(int j = 0; j<180; j++){
+	    	if(accumulator.at<uchar>(i,j)<105){ // the 105 value is experimental
+	    		accumulator.at<uchar>(i,j)=0;
+	    	}	
+    	}
+    }
+
+    // Get the local maxs
+    for (int i = 0; i<mn; i++){
+    	for(int j = 0; j<180; j++){
+	    	if(accumulator.at<uchar>(i,j)!=0){
+	    		maxs.push_back(accumulator.at<uchar>(i,j));
+	    		rhoMaxs.push_back(i);
+	    		thMaxs.push_back(j);
+	    	}	
+    	}
+    }
+
+    // draw the lines...
+    for(int i = 0 ; i<maxs.size();i++){
+
+
+    	int rhoMax = rhoMaxs[i];
+    	int thMax = thMaxs[i];
+
+	    for (int x = 0; x < rows; x++){
+	    	int y = (int)(rhoMax - x*cos(thMax*CV_PI/180.0))/sin(thMax*CV_PI/180.0);
+	    	houghImg.at<Vec3b>(x,y)[0] = 0;
+	    	houghImg.at<Vec3b>(x,y)[1] = 0;
+	    	houghImg.at<Vec3b>(x,y)[2] = 255;
+
+	    }
+	}
+
+	imshow("lignes detectees", houghImg);
 
 	waitKey();
      
