@@ -28,15 +28,15 @@ void pitch_mask(const Mat& source_img, Mat& mask){
   
   inRange(hsv_img, Scalar(iLowHGREEN, iLowSGREEN, iLowVGREEN), Scalar(iHighHGREEN, iHighSGREEN, iHighVGREEN), mask);
   
-  erode(mask,mask , getStructuringElement(MORPH_ELLIPSE, Size(23,23))); //might be useful...
-  dilate(mask,mask, getStructuringElement(MORPH_ELLIPSE, Size(23,23)));  
+  erode(mask,mask , getStructuringElement(MORPH_ELLIPSE, Size(10,10))); //might be useful...
+  dilate(mask,mask, getStructuringElement(MORPH_ELLIPSE, Size(10,10)));  
  
   imshow("tmpmask",mask);
 
 }
 
 
-void process(const char* imsname, int thmag){
+void process(const char* imsname, int th){
   Mat img = imread(imsname, 1);
   Mat img_gray;
   Mat mask;
@@ -49,13 +49,13 @@ void process(const char* imsname, int thmag){
     cerr << "can not open " << imsname << endl;
   }
     
-
+  imshow("source", img);
   cvtColor( img, img_gray, CV_BGR2GRAY );
 
   
   for (int i = 0; i<rows; i++){
     for(int j = 0; j<cols; j++){
-      //img_gray.at<uchar>(i,j) = (img_gray.at<uchar>(i,j)>90 && mask.at<uchar>(i,j)==255 ) ? 255 : 0;
+      img_gray.at<uchar>(i,j) = (mask.at<uchar>(i,j)==255 ) ? img_gray.at<uchar>(i,j) : 0;
       int mean = 0;
       for(int k = -5;k<6;k++)
 	{
@@ -70,50 +70,38 @@ void process(const char* imsname, int thmag){
 	    }
 	}
       mean = mean/121;
-      if(img_gray.at<uchar>(i,j)>mean+60 && mask.at<uchar>(i,j)==255){
+      if(img_gray.at<uchar>(i,j)>mean+50 && mask.at<uchar>(i,j)==255){
 	img_gray.at<uchar>(i,j) = 255;
       }
       else{
 	img_gray.at<uchar>(i,j) = 0;
-      }
-    }
-  }
+	}
+	}
+}
 
     
-  imshow("source", img_gray);
+  imshow("source+mask", img_gray);
 
-  Mat dst, cdst;
-  Canny(img_gray, dst, 50, 200, 3);
-  cvtColor(dst, cdst, CV_GRAY2BGR);
-  // int erosion_size = 10;
-  // dilate(dst,dst, getStructuringElement(MORPH_RECT, Size(erosion_size,1)));  
-  // erode(dst,dst , getStructuringElement(MORPH_RECT, Size(erosion_size,1)));
- 
-  
-  Mat accumulator((int)sqrt(rows*rows+cols*cols),CV_PI,0,Scalar(0));
-  vector<Vec2f> lines;
-  HoughLines(dst, lines, 1, CV_PI/180, thmag, 0, 0 );
+  Mat edges;
 
-  for( size_t i = 0; i < lines.size(); i++ )
-    {
-      float rho = lines[i][0], theta = lines[i][1];
-      accumulator.at<uchar>(rho,theta)++;
-      Point pt1, pt2;
-      double a = cos(theta), b = sin(theta);
-      double x0 = a*rho, y0 = b*rho;
-      pt1.x = x0 + 1000*(-b);
-      pt1.y = y0 + 1000*(a);
-      pt2.x = x0 - 1000*(-b);
-      pt2.y = y0 - 1000*(a);
-      line( cdst, pt1, pt2, Scalar(0,0,255), 1, CV_AA);
-    }
-  imshow("source", img_gray);
-  imshow("lignes detectees", cdst);
-  imshow("contours", dst);
-  imshow("accumulateur", accumulator);
+  Canny( img_gray, edges, 50, 200, 3 );
+  vector<Vec4i> p_lines;
 
-  
-  
+  Mat houghLines(rows, cols, 0, Scalar(0)); 
+  // cvtColor( edges, houghLines, COLOR_GRAY2BGR );
+
+  /// 2. Use Probabilistic Hough Transform
+  HoughLinesP( edges, p_lines, 1, CV_PI/180, th, 30, 10 );
+
+  /// Show the result
+  for( size_t i = 0; i < p_lines.size(); i++ )
+     {
+       Vec4i l = p_lines[i];
+       line( houghLines, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(255,255,255), 3, CV_AA);
+     }
+
+   imshow( "lignes detectees", houghLines );
+
   
   waitKey();
      
@@ -121,7 +109,7 @@ void process(const char* imsname, int thmag){
 
 void usage(const char *s){
   
-  cerr << "Usage: " << s << " imsname th-mag" << endl;
+  cerr << "Usage: " << s << " imsname th" << endl;
   exit(EXIT_FAILURE);
 
 }
