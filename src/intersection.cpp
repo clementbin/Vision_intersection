@@ -8,15 +8,15 @@
 using namespace cv;
 using namespace std;
 
-#define iLowHGREEN 20
-#define iHighHGREEN 80
+#define iLowHGREEN 22//limit = 24
+#define iHighHGREEN 60//limit = 59
 
-#define iLowSGREEN 0
-#define iHighSGREEN 255
+#define iLowSGREEN 50//limit = 50
+#define iHighSGREEN 215//limit = 215
 
-#define iLowVGREEN 0
-#define iHighVGREEN 255
-
+#define iLowVGREEN 40//limit = 40
+#define iHighVGREEN 175//limit = 175
+String imageNames[16] = {"001-rgb.png","0001-rgb.png","34-rgb.png","074-rgb.png","083-rgb.png","094-rgb.png","099-rgb.png","101-rgb.png","147-rgb.png","156-rgb.png","157-rgb.png","164-rgb.png","194-rgb.png","205-rgb.png","264-rgb.png","268-rgb.png"};
 
 
 void matchingMethod( int,Mat img,Mat templ )
@@ -67,17 +67,15 @@ void pitch_mask(const Mat& source_img, Mat& mask){
   cvtColor(source_img, hsv_img, COLOR_BGR2HSV); 
   
   inRange(hsv_img, Scalar(iLowHGREEN, iLowSGREEN, iLowVGREEN), Scalar(iHighHGREEN, iHighSGREEN, iHighVGREEN), mask);
-  
-  erode(mask,mask , getStructuringElement(MORPH_ELLIPSE, Size(23,23))); //might be useful...
-  dilate(mask,mask, getStructuringElement(MORPH_ELLIPSE, Size(23,23)));  
- 
-  imshow("tmpmask",mask);
 
+  medianBlur(mask,mask,21);
+  imshow("tmpmask",mask);
 }
 
-
 void process(const char* imsname, const char* templname, int th){
-  Mat img = imread(imsname, 1);
+  for(int i = 0; i< 16; i++)
+  {
+  Mat img = imread("data/" + imageNames[i], 1);
   Mat img_gray;
   Mat mask;
   int cols = img.cols; 
@@ -153,6 +151,7 @@ void process(const char* imsname, const char* templname, int th){
   imwrite("houghLines164.png",houghLines);
   
   waitKey();
+}
      
 }
 
