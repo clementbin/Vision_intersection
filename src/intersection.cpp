@@ -18,6 +18,46 @@ using namespace std;
 #define iHighVGREEN 255
 
 
+
+void matchingMethod( int,Mat img,Mat templ )
+{
+  /// Source image to display
+  Mat img_display,result;
+  img.copyTo( img_display );
+
+  /// Create the result matrix
+  int result_cols =  img.cols - templ.cols + 1;
+  int result_rows = img.rows - templ.rows + 1;
+
+  result.create( result_rows, result_cols, 0 );
+
+  // Method: \n 0: SQDIFF \n 1: SQDIFF NORMED \n 2: TM CCORR \n 3: TM CCORR NORMED \n 4: TM COEFF \n 5: TM COEFF NORMED
+  int match_method = 3;
+  /// Do the Matching and Normalize
+  matchTemplate( img, templ, result, match_method );
+  normalize( result, result, 0, 1, NORM_MINMAX, -1, Mat() );
+
+  /// Localizing the best match with minMaxLoc
+  double minVal; double maxVal; Point minLoc; Point maxLoc;
+  Point matchLoc;
+
+  minMaxLoc( result, &minVal, &maxVal, &minLoc, &maxLoc, Mat() );
+
+  /// For SQDIFF and SQDIFF_NORMED, the best matches are lower values. For all the other methods, the higher the better
+  if( match_method  == CV_TM_SQDIFF || match_method == CV_TM_SQDIFF_NORMED )
+    { matchLoc = minLoc; }
+  else
+    { matchLoc = maxLoc; }
+
+  /// Show me what you got
+  rectangle( img_display, matchLoc, Point( matchLoc.x + templ.cols , matchLoc.y + templ.rows ), Scalar::all(0), 2, 8, 0 );
+  rectangle( result, matchLoc, Point( matchLoc.x + templ.cols , matchLoc.y + templ.rows ), Scalar::all(0), 2, 8, 0 );
+
+  imshow( "pattern detection", result );
+
+  return;
+}
+
 void pitch_mask(const Mat& source_img, Mat& mask){
   
   int cols = source_img.cols; 
@@ -28,15 +68,15 @@ void pitch_mask(const Mat& source_img, Mat& mask){
   
   inRange(hsv_img, Scalar(iLowHGREEN, iLowSGREEN, iLowVGREEN), Scalar(iHighHGREEN, iHighSGREEN, iHighVGREEN), mask);
   
-  erode(mask,mask , getStructuringElement(MORPH_ELLIPSE, Size(10,10))); //might be useful...
-  dilate(mask,mask, getStructuringElement(MORPH_ELLIPSE, Size(10,10)));  
+  erode(mask,mask , getStructuringElement(MORPH_ELLIPSE, Size(23,23))); //might be useful...
+  dilate(mask,mask, getStructuringElement(MORPH_ELLIPSE, Size(23,23)));  
  
   imshow("tmpmask",mask);
 
 }
 
 
-void process(const char* imsname, int th){
+void process(const char* imsname, const char* templname, int th){
   Mat img = imread(imsname, 1);
   Mat img_gray;
   Mat mask;
@@ -90,7 +130,7 @@ void process(const char* imsname, int th){
   Mat houghLines(rows, cols, 0, Scalar(0)); 
   // cvtColor( edges, houghLines, COLOR_GRAY2BGR );
 
-  /// 2. Use Probabilistic Hough Transform
+  /// Use Probabilistic Hough Transform
   HoughLinesP( edges, p_lines, 1, CV_PI/180, th, 30, 10 );
 
   /// Show the result
@@ -100,8 +140,17 @@ void process(const char* imsname, int th){
        line( houghLines, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(255,255,255), 3, CV_AA);
      }
 
-   imshow( "lignes detectees", houghLines );
+  dilate(houghLines,houghLines, getStructuringElement(MORPH_ELLIPSE, Size(10,10)));  
+  erode(houghLines,houghLines , getStructuringElement(MORPH_ELLIPSE, Size(10,10))); //might be useful...
+  
+ 
 
+  imshow( "lignes detectees", houghLines );
+  
+  Mat templ = imread(templname,0);
+  
+  matchingMethod(0,houghLines,templ);
+  imwrite("houghLines164.png",houghLines);
   
   waitKey();
      
@@ -109,17 +158,17 @@ void process(const char* imsname, int th){
 
 void usage(const char *s){
   
-  cerr << "Usage: " << s << " imsname th" << endl;
+  cerr << "Usage: " << s << " imsname template th" << endl;
   exit(EXIT_FAILURE);
 
 }
 
-#define param 2
+#define param 3
 int main( int argc, char** argv){
 
   if(argc != (param+1))
     usage(argv[0]);
-  process(argv[1],atoi(argv[2]));
+  process(argv[1],argv[2],atoi(argv[3]));
   return EXIT_SUCCESS;
 
 }
