@@ -43,7 +43,7 @@ void pitch_mask(const Mat& source_img, Mat& mask){
 }
 
 /********** find the intersections for a given input image ************/
-void findIntersections(string imsname, int th){
+void findIntersections(string imsname){
 
  
       Mat img = imread(imsname , 1); 
@@ -67,9 +67,9 @@ void findIntersections(string imsname, int th){
       // Apply the mask to the image
       for (int i = 0; i<rows; i++){
 	for(int j = 0; j<cols; j++){
-	  img_gray.at<uchar>(i,j) = (mask.at<uchar>(i,j)==255 ) ? img_gray.at<uchar>(i,j) : 0;
-	  int mean = 0;
-	  int cnt = 0;
+	  img_gray.at<uchar>(i,j) = (mask.at<uchar>(i,j)==255 ) ?  img_gray.at<uchar>(i,j) : 0;
+	  float mean = 0;
+	  float cnt = 0;
 	  //find local maxs
 	  for(int k = -5;k<6;k++)
 	    {
@@ -79,7 +79,7 @@ void findIntersections(string imsname, int th){
 		  int b = (j+l);
 		  if( (a >= 0) && (b >= 0) && (a < rows) && (b < cols) )
 		    {
-		      mean += img_gray.at<uchar>(a,b);
+		      mean += (float)img_gray.at<uchar>(a,b);
 		      cnt++;
 		    }
 		}
@@ -87,29 +87,28 @@ void findIntersections(string imsname, int th){
 	  mean = mean/cnt;
 
 	  //binarization
-	  if(img_gray.at<uchar>(i,j)>mean+60 && mask.at<uchar>(i,j)==255){
+	  if(mask.at<uchar>(i,j)==255 && img_gray.at<uchar>(i,j)>mean+60){
 	    img_gray.at<uchar>(i,j) = 255;
 	  }
 	  else{
-	    img_gray.at<uchar>(i,j) = 0;
+	     img_gray.at<uchar>(i,j) = 0;
 	  }
 	}
       }
 
-  
       imshow("source+mask", img_gray);
       
       /*Detect the contours and apply Probabilistic Hough Transform to it*/
       Mat edges;
       
-      Canny( img_gray, edges, 50, 200, 3 );
+      Canny( img_gray, edges, 50, 150, 3 );
 
       vector<Vec4i> p_lines;
 
       Mat houghLines(rows, cols, 0, Scalar(0)); 
 
       /// Use Probabilistic Hough Transform
-      HoughLinesP( edges, p_lines, 1, CV_PI/180, th, 30, 30 );
+      HoughLinesP( edges, p_lines, 1, CV_PI/180, 30, 30, 30 );
 
       /// Draw the segments
       for( size_t i = 0; i < p_lines.size(); i++ )
@@ -131,20 +130,25 @@ void findIntersections(string imsname, int th){
 
 void usage(const char *s){
   
-  cerr << "Usage: " << s << "imsname th" << endl;
+  cerr << "Usage: " << s << "imsname" << endl;
   exit(EXIT_FAILURE);
 
 }
 
-#define param 2
+#define param 1
 int main( int argc, char** argv){
 
-  if(argc != (param+1))
+  if(argc > param+1)
     usage(argv[0]);
-  for(int i = 0; i< 16; i++)
-    {
-      findIntersections("../data/" + imageNames[i],atoi(argv[2]));
-    }
+  else if (argc == param+1){
+    findIntersections(argv[1]);
+  }
+  else{
+    for(int i = 0; i< 16; i++)
+      {
+	findIntersections("../data/" + imageNames[i]);
+      }
+  }
   return EXIT_SUCCESS;
 
 }

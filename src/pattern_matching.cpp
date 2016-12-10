@@ -50,14 +50,14 @@ void matchingMethod( int,Mat img ,Mat srcImg)
       }
       }
 
-  normalize( result, result, 0, 1, NORM_MINMAX, -1, Mat() );
+  normalize( result, result, 0, 10, NORM_MINMAX, -1, Mat() );
 
     
   vector<Vec4f> maxPoints;
   
   for (int i = 0; i<result.rows;i++){
     for (int j = 0;j<result.cols;j++){
-      if (result.at<float>(i,j)>0.96){
+      if (result.at<float>(i,j)>9.6){
 	  maxPoints.push_back(Vec4f(j,i,result.at<float>(i,j),featureLoc.at<uchar>(i,j)));
       }
     }
@@ -70,18 +70,23 @@ void matchingMethod( int,Mat img ,Mat srcImg)
   /// Show found patterns - take the 2 best (if any) from each pattern
   int cntCorner=0,cntCross=0,cntT=0;
   for (Vec4f v : maxPoints){
-    cout << v[2] << endl;
     if(v[3]==0 && cntCorner<2){ // Blue == Corner
       rectangle( srcImg, Point(v[0], v[1]), Point( v[0] + templ.cols , v[1] + templ.rows ), Scalar(255,0,0), 2, 8, 0 );
+      
+      cout << v << endl;
       cntCorner++;
     }
     else if(v[3]==1 && cntCross<2){ // Green == Cross
       rectangle( srcImg, Point(v[0], v[1]), Point( v[0] + templ.cols , v[1] + templ.rows ), Scalar(0,255,0), 2, 8, 0 );
+      
+    cout << v << endl;
       cntCross++;
     }
     else if(v[3]==2 && cntT<2){// Red == T
       rectangle( srcImg, Point(v[0], v[1]), Point( v[0] + templ.cols , v[1] + templ.rows ), Scalar(0,0,255), 2, 8, 0 );
       cntT++;
+      
+    cout << v << endl;
     }
   }
   
