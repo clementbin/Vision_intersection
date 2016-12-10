@@ -3,9 +3,11 @@ project (intersection)
 
 find_package (OpenCV REQUIRED)
 
+include_directories(src)
 
 set (SOURCES
-    src/intersection.cpp
+  src/intersection.cpp
+  src/pattern_matching.cpp
     )
     
 
