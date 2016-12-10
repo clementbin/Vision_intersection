@@ -1,6 +1,7 @@
 #include <iostream>
 #include <cstdlib>
 #include <list>
+#include <time.h>
 
 #include <opencv2/opencv.hpp>
 #include "opencv2/highgui/highgui.hpp"
@@ -71,9 +72,9 @@ void findIntersections(string imsname){
 	  float mean = 0;
 	  float cnt = 0;
 	  //find local maxs
-	  for(int k = -5;k<6;k++)
+	  for(int k = -6;k<7;k++)
 	    {
-	      for(int l = -5;l<6;l++)
+	      for(int l = -6;l<7;l++)
 		{	
 		  int a = (i+k);
 		  int b = (j+l);
@@ -92,7 +93,7 @@ void findIntersections(string imsname){
 	  }
 	  else{
 	     img_gray.at<uchar>(i,j) = 0;
-	  }
+	     }
 	}
       }
 
@@ -101,8 +102,8 @@ void findIntersections(string imsname){
       /*Detect the contours and apply Probabilistic Hough Transform to it*/
       Mat edges;
       
-      Canny( img_gray, edges, 50, 150, 3 );
-
+      Canny( img_gray, edges, 50, 200, 3 );
+      
       vector<Vec4i> p_lines;
 
       Mat houghLines(rows, cols, 0, Scalar(0)); 
@@ -146,9 +147,13 @@ int main( int argc, char** argv){
   else{
     for(int i = 0; i< 16; i++)
       {
+	//	clock_t begin = clock();
 	findIntersections("../data/" + imageNames[i]);
+	//	clock_t end = clock();
+	//	cout << "time spent:" << (double) (end - begin) << endl;
       }
   }
+  
   return EXIT_SUCCESS;
 
 }
