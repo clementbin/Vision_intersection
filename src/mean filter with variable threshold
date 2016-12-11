@@ -1,3 +1,4 @@
+
 int th = 80;
 int halfMaskSize = 10;
 
@@ -13,12 +14,12 @@ for (int i = 0; i<rows; i++){
 				int a = (i+k);
 				int b = (j+l);
 				if( (a >= 0) && (b >= 0) && (a < rows) && (b < cols) ){
-					mean += (float)img_gray.at<uchar>(a,b);
+					mean += (float)imgIn.at<uchar>(a,b);
 					cnt++;
 				}
 			}
 		}
-				
+	mean = mean/cnt;
 	if(mean > th)
 		imgOut.at<uchar>(i,j) = 255;
 	else
