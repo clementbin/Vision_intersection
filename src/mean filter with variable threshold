@@ -1,6 +1,6 @@
 
 int th = 80;
-int halfMaskSize = 10;
+int halfMaskSize = 7;
 
 Mat imgout = imgIn.clone();
 
