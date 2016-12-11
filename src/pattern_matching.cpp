@@ -12,7 +12,7 @@ void matchingMethod( int,Mat img ,Mat srcImg)
   
   vector<Mat> results;
   
-  int match_method = 5; // Method: \n 0: SQDIFF \n 1: SQDIFF NORMED \n 2: TM CCORR \n 3: TM CCORR NORMED \n 4: TM COEFF \n 5: TM COEFF NORMED
+  int match_method = 3; // Method: \n 0: SQDIFF \n 1: SQDIFF NORMED \n 2: TM CCORR \n 3: TM CCORR NORMED \n 4: TM COEFF \n 5: TM COEFF NORMED
   
   Mat img_display,templ;
   
@@ -45,7 +45,7 @@ void matchingMethod( int,Mat img ,Mat srcImg)
 	for (int j = 0;j<result.cols;j++){
 	  if(results[n].at<float>(i,j)>result.at<float>(i,j)){
 	    result.at<float>(i,j) = results[n].at<float>(i,j);
-	    featureLoc.at<uchar>(i,j) = n%3;
+	    featureLoc.at<uchar>(i,j) = n;
 	      }
 	}
       }

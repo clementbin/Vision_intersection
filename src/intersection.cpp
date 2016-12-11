@@ -98,11 +98,14 @@ void findIntersections(string imsname){
       }
 
       imshow("source+mask", img_gray);
-      
+
+       
       /*Detect the contours and apply Probabilistic Hough Transform to it*/
+
       Mat edges;
       
       Canny( img_gray, edges, 50, 200, 3 );
+      
       
       vector<Vec4i> p_lines;
 
@@ -115,7 +118,7 @@ void findIntersections(string imsname){
       for( size_t i = 0; i < p_lines.size(); i++ )
 	{
 	  Vec4i l = p_lines[i];
-	  line( houghLines, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(255,255,255), 5, CV_AA);
+	  line( houghLines, Point(l[0]-5, l[1]), Point(l[2]+5, l[3]), Scalar(255,255,255), 5, CV_AA);
 	}
 
       imshow( "lignes detectees", houghLines );
