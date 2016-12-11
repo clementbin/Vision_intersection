@@ -1,0 +1,27 @@
+int th = 80;
+int halfMaskSize = 10;
+
+Mat imgout = imgIn.clone();
+
+for (int i = 0; i<rows; i++){
+	for(int j = 0; j<cols; j++){
+		int mean = 0;
+		int cnt = 0;
+		
+		for(int k = -halfMaskSize; k < halfMaskSize; k++){
+			for(int l = -halfMaskSize; l < halfMaskSize; l++){	
+				int a = (i+k);
+				int b = (j+l);
+				if( (a >= 0) && (b >= 0) && (a < rows) && (b < cols) ){
+					mean += (float)img_gray.at<uchar>(a,b);
+					cnt++;
+				}
+			}
+		}
+				
+	if(mean > th)
+		imgOut.at<uchar>(i,j) = 255;
+	else
+		imgOut.at<uchar>(i,j) = 0;
+	}
+}
