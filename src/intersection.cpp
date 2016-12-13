@@ -21,6 +21,16 @@ using namespace std;
 #define iLowVGREEN 40//limit = 40
 #define iHighVGREEN 175//limit = 175
 
+
+#define iLowBWHITE 0//limit = 24
+#define iHighBWHITE 65//limit = 59
+
+#define iLowGWHITE 78//limit = 50
+#define iHighGWHITE 218//limit = 215
+
+#define iLowRWHITE 79//limit = 40
+#define iHighRWHITE 171//limit = 175
+
 // list of images used for tests
 String imageNames[16] = {"001-rgb.png","0001-rgb.png","34-rgb.png","074-rgb.png","083-rgb.png","094-rgb.png","099-rgb.png","101-rgb.png","147-rgb.png","156-rgb.png","157-rgb.png","164-rgb.png","194-rgb.png","205-rgb.png","264-rgb.png","268-rgb.png"};
 
@@ -40,6 +50,8 @@ void pitch_mask(const Mat& source_img, Mat& mask){
 
   erode(mask,mask , getStructuringElement(MORPH_ELLIPSE, Size(10,10))); //might be useful...
   
+  //erode(mask,mask , getStructuringElement(MORPH_ELLIPSE, Size(1,2))); //might be useful...
+  //dilate(mask,mask , getStructuringElement(MORPH_ELLIPSE, Size(1,2))); //might be useful...
   imshow("tmpmask",mask);
 }
 
@@ -47,7 +59,7 @@ void pitch_mask(const Mat& source_img, Mat& mask){
 void findIntersections(string imsname){
 
  
-      Mat img = imread(imsname , 1); 
+  Mat img = imread(imsname,1); 
 
       if(img.empty()){
 	cerr << "can not open " << imsname << endl;
@@ -62,9 +74,9 @@ void findIntersections(string imsname){
       // compute the mask
       pitch_mask(img, mask);
 
-
-      cvtColor( img, img_gray, CV_BGR2GRAY );
-
+      inRange(img, Scalar(iLowBWHITE, iLowGWHITE, iLowRWHITE), Scalar(iHighBWHITE, iHighGWHITE, iHighRWHITE), img_gray);
+      
+      // cvtColor( img, img_gray, CV_BGR2GRAY );
       // Apply the mask to the image
       for (int i = 0; i<rows; i++){
 	for(int j = 0; j<cols; j++){
@@ -72,7 +84,7 @@ void findIntersections(string imsname){
 	  float mean = 0;
 	  float cnt = 0;
 	  //find local maxs
-	  for(int k = -6;k<7;k++)
+	  /*  for(int k = -6;k<7;k++)
 	    {
 	      for(int l = -6;l<7;l++)
 		{	
@@ -88,12 +100,12 @@ void findIntersections(string imsname){
 	  mean = mean/cnt;
 
 	  //binarization
-	  if(mask.at<uchar>(i,j)==255 && img_gray.at<uchar>(i,j)>mean+60){
+	  if(mask.at<uchar>(i,j)==255 && img_gray.at<uchar>(i,j)>mean+60 ){
 	    img_gray.at<uchar>(i,j) = 255;
 	  }
 	  else{
 	     img_gray.at<uchar>(i,j) = 0;
-	     }
+	     }*/
 	}
       }
 
@@ -112,19 +124,20 @@ void findIntersections(string imsname){
       Mat houghLines(rows, cols, 0, Scalar(0)); 
 
       /// Use Probabilistic Hough Transform
-      HoughLinesP( edges, p_lines, 1, CV_PI/180, 30, 30, 30 );
+      HoughLinesP( edges, p_lines, 1, CV_PI/180, 20, 30, 30 );
 
       /// Draw the segments
       for( size_t i = 0; i < p_lines.size(); i++ )
 	{
 	  Vec4i l = p_lines[i];
-	  line( houghLines, Point(l[0]-5, l[1]), Point(l[2]+5, l[3]), Scalar(255,255,255), 5, CV_AA);
+	  line( houghLines, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(255,255,255), 5, CV_AA);
 	}
 
       imshow( "lignes detectees", houghLines );
 
       //Call the matching method, to try to match patterns with detected lines
-      matchingMethod(0,houghLines,img);
+      vector<Vec4f> matchingPoints;
+      matchingMethod(0,img_gray,img);
       
       imwrite("houghLines164.png", houghLines);
   
@@ -148,7 +161,7 @@ int main( int argc, char** argv){
     findIntersections(argv[1]);
   }
   else{
-    for(int i = 0; i< 16; i++)
+    for(int i = 0; i<16; i++)
       {
 	//	clock_t begin = clock();
 	findIntersections("../data/" + imageNames[i]);

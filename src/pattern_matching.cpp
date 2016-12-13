@@ -27,7 +27,7 @@ void matchingMethod( int,Mat img ,Mat srcImg)
   int result_cols =  img.cols - templ.cols + 1;
   int result_rows = img.rows - templ.rows + 1;
 
-   result.create( result_rows, result_cols, 0 );
+  result.create( result_rows, result_cols, 0 );
   
 
   /// Do the Matching and Normalize
@@ -51,6 +51,8 @@ void matchingMethod( int,Mat img ,Mat srcImg)
       }
       }
 
+  imshow("seuil",result);
+
   normalize( result, result, 0, 10, NORM_MINMAX, -1, Mat() );
 
     
@@ -70,7 +72,8 @@ void matchingMethod( int,Mat img ,Mat srcImg)
   
   /// Show found patterns - take the 2 best (if any) from each pattern
   int cntCorner=0,cntCross=0,cntT=0;
-  for (Vec4f v : maxPoints){
+  for (int i=0;i<maxPoints.size();i++){
+    Vec4f v = maxPoints[i];
     if(((int)v[3]%3)==0 && cntCorner<2){ // Blue == Corner
       rectangle( srcImg, Point(v[0], v[1]), Point( v[0] + templ.cols , v[1] + templ.rows ), Scalar(255,0,0), 2, 8, 0 );
       
