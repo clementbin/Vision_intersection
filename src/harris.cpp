@@ -1,72 +1,207 @@
+#include <iostream>
+#include <cstdlib>
+#include <list>
+#include <time.h>
+
 #include <opencv2/opencv.hpp>
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
-#include <iostream>
-#include <cstdlib>
 
+#include "pattern_matching.h"
 
 using namespace cv;
 using namespace std;
 
-/// Global variables
-Mat src, src_gray;
-int thresh = 200;
-int max_thresh = 255;
 
-char* source_window = "Source image";
-char* corners_window = "Corners detected";
+// list of images used for tests
+String imageNames[16] = {"001-rgb.png","0001-rgb.png","34-rgb.png","074-rgb.png","083-rgb.png","094-rgb.png","099-rgb.png","101-rgb.png","147-rgb.png","156-rgb.png","157-rgb.png","164-rgb.png","194-rgb.png","205-rgb.png","264-rgb.png","268-rgb.png"};
 
-/// Function header
-void cornerHarris_demo( int, void* );
 
-/** @function main */
-int main( int argc, char** argv )
-{
-  /// Load source image and convert it to gray
-  src = imread( argv[1], 1 );
-  cvtColor( src, src_gray, CV_BGR2GRAY );
 
-  /// Create a window and a trackbar
-  namedWindow( source_window, CV_WINDOW_AUTOSIZE );
-  createTrackbar( "Threshold: ", source_window, &thresh, max_thresh, cornerHarris_demo );
-  imshow( source_window, src );
+int isSingleLine(Mat featureWin){
 
-  cornerHarris_demo( 0, 0 );
 
+  Mat edges;
+  int rows = featureWin.rows;
+  int cols = featureWin.cols;
+      
+      
+  vector<Vec4i> p_lines;
+
+  Mat houghLines(rows, cols, 0, Scalar(0)); 
+
+  /// Use Probabilistic Hough Transform
+  HoughLinesP( featureWin, p_lines, 1, CV_PI/180, 40, 10,1 );
+
+  /// Draw the segments
+  for( size_t i = 0; i < p_lines.size(); i++ )
+    {
+      Vec4i l = p_lines[i];
+      line( houghLines, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(255,255,255), 2, CV_AA);
+    }
+
+  cout << p_lines.size() <<endl;
+  imshow( "lignes detectees", houghLines );
   waitKey(0);
-  return(0);
+  
+  return 0;
 }
 
+
+
+
+
 /** @function cornerHarris_demo */
-void cornerHarris_demo( int, void* )
+void findIntersectionsWithHarris(string imsname)
 {
 
-  Mat dst, dst_norm, dst_norm_scaled;
-  dst = Mat::zeros( src.size(), CV_32FC1 );
+  
+  Mat img_gray = imread(imsname,0); 
 
+  if(img_gray.empty()){
+    cerr << "can not open " << imsname << endl;
+  }
+    
+  int cols = img_gray.cols; 
+  int rows = img_gray.rows;
+      
+  Mat dst, dst_norm, dst_points;
+  dst = Mat::zeros( img_gray.size(), CV_32FC1 );
+  dst_points = Mat::zeros( img_gray.size(), 0 );
   /// Detector parameters
-  int blockSize = 2;
+  int blockSize = 12;
   int apertureSize = 3;
-  double k = 0.04;
-
+  double k = 0.01;
+  int thresh = 90;
+  int personalSpace=20;
+  
   /// Detecting corners
-  cornerHarris( src_gray, dst, blockSize, apertureSize, k, BORDER_DEFAULT );
+  cornerHarris( img_gray, dst, blockSize, apertureSize, k, BORDER_DEFAULT );
 
   /// Normalizing
   normalize( dst, dst_norm, 0, 255, NORM_MINMAX, CV_32FC1, Mat() );
-  convertScaleAbs( dst_norm, dst_norm_scaled );
+  //convertScaleAbs( dst_norm, dst_points );
+
+
 
   /// Drawing a circle around corners
-  for( int j = 0; j < dst_norm.rows ; j++ )
-     { for( int i = 0; i < dst_norm.cols; i++ )
-          {
-            if( (int) dst_norm.at<float>(j,i) > thresh )
-              {
-               circle( dst_norm_scaled, Point( i, j ), 5,  Scalar(0), 2, 8, 0 );
-              }
-          }
-     }
+  int nbCorners = 0;
+  for( int j = 0; j < rows ; j++ )
+    { for( int i = 0; i < cols; i++ )
+        {
+	  if( (int) dst_norm.at<float>(j,i) > thresh )
+            {
+	      dst_points.at<uchar>(j,i) = 255; //possible intersection
+	      nbCorners++;
+	    }
+	}
+    }
+
+   for( int j = 0; j < rows ; j++ )
+    { for( int i = 0; i < cols; i++ )
+        {
+	  if (dst_points.at<uchar>(j,i) == 255){
+	  for(int k = -personalSpace;k<personalSpace;k++)
+	    {
+	      for(int l = -personalSpace;l<personalSpace;l++)
+		{	
+		  int a = (i+k);
+		  int b = (j+l);
+		  if(!((a==i) && (b==j)) && (a >= 0) && (b >= 0) && (b < rows) && (a < cols) )
+		    {
+		      if(dst_points.at<uchar>(b,a)==255){
+			dst_points.at<uchar>(b,a) = 0; //delete other nearby points
+			nbCorners--;
+		      }
+			  
+		    }
+		}
+	    }
+	  if( (j>(rows-20)) || (i>(cols-20)) || (j<20) || (i<20)){ //ignore features point near the border 
+	    dst_points.at<uchar>(j,i) = 0;
+	    nbCorners--;
+	  }
+	  }
+	  
+	}
+    }
+  
+  cout <<imsname<<": "<< nbCorners << endl;
+
+  const int featuresSize = nbCorners;
+  //Find a better way to store feature points
+  Mat featureWin =  Mat::zeros(100, 100, 0);
+  Point features[featuresSize];
+  int n =0;
+
+  
   /// Showing the result
-  namedWindow( corners_window, CV_WINDOW_AUTOSIZE );
-  imshow( corners_window, dst_norm_scaled );
+  imshow( "detected intersections", img_gray );
+  
+  for( int j = 0; j < rows ; j++ ){
+    for( int i = 0; i < cols; i++ ){
+      if (dst_points.at<uchar>(j,i) == 255){
+	features[n] = Point(i,j);
+	n++;
+	//circle (img_gray, Point(i,j),8,Scalar(128),2,8,0);
+      }
+    }
+  }
+
+  for(int n=0; n<featuresSize;n++){
+    Point featurePoint = features[n];
+    int i = featurePoint.x;
+    int j = featurePoint.y;
+    for(int k = -50;k<50;k++)
+      {
+	for(int l = -50;l<50;l++)
+	  {	
+	    int a = (i+k);
+	    int b = (j+l);
+	    if( (a >= 0) && (b >= 0) && (b < rows) && (a < cols) )
+	      {
+		featureWin.at<uchar>(l+50,k+50) = img_gray.at<uchar>(b,a);
+	      }
+	  }
+      }
+    imshow( "pattern window", featureWin );
+    waitKey(0);
+    matchingMethod(0,featureWin,featureWin);
+    //isSingleLine(featureWin);
+    featureWin =  Mat::zeros(100, 100, 0);
+  }
+  
+
+  
+  waitKey(0);
+}
+
+
+void usage(const char *s){
+  
+  cerr << "Usage: " << s << "imsname th" << endl;
+  exit(EXIT_FAILURE);
+
+}
+
+#define param 1
+int main( int argc, char** argv){
+
+  if(argc > param+1)
+    usage(argv[0]);
+  else if (argc == param+1){
+    findIntersectionsWithHarris(argv[1]);
+  }
+  else{
+    for(int i = 0; i<16; i++)
+      {
+	//	clock_t begin = clock();
+	findIntersectionsWithHarris("../data/cheat/" + imageNames[i]);
+	//	clock_t end = clock();
+	//	cout << "time spent:" << (double) (end - begin) << endl;
+      }
+  }
+  
+  return EXIT_SUCCESS;
+
 }

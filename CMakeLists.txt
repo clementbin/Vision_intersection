@@ -13,10 +13,18 @@ set (SOURCES
 
 
 set (SRC_EX
-    src/example_opencv.cpp
+    src/threshold_yuv.cpp
     )
     
+
+set (HARRIS_EX
+	src/harris.cpp
+	src/pattern_matching.cpp
+	)
+
 add_executable (intersection ${SOURCES})
-add_executable (example_opencv ${SRC_EX})
+add_executable (threshold_yuv ${SRC_EX})
+add_executable (harris ${HARRIS_EX})
 target_link_libraries (intersection ${OpenCV_LIBS})
-target_link_libraries (example_opencv ${OpenCV_LIBS})
+target_link_libraries (threshold_yuv ${OpenCV_LIBS})
+target_link_libraries (harris ${OpenCV_LIBS})
