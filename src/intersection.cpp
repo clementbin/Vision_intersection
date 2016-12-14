@@ -32,7 +32,22 @@ using namespace std;
 #define iHighRWHITE 255//limit = 175
 
 // list of images used for tests
-String imageNames[16] = {"001-rgb.png","0001-rgb.png","34-rgb.png","074-rgb.png","083-rgb.png","094-rgb.png","099-rgb.png","101-rgb.png","147-rgb.png","156-rgb.png","157-rgb.png","164-rgb.png","194-rgb.png","205-rgb.png","264-rgb.png","268-rgb.png"};
+vector<String> imageNames;
+
+void findIntersections(string imsname);
+
+
+/********** initialize the list of all image within the folder in parameter ************/
+void initProg(String folder){
+  
+
+    glob(folder, imageNames);
+
+    for(size_t i = 0; i < imageNames.size(); ++i)
+    {
+        findIntersections(imageNames[i]);
+    }
+}
 
 
 /********** Compute a mask of the football field (green) ************/
@@ -50,15 +65,15 @@ void pitch_mask(const Mat& source_img, Mat& mask){
 
   erode(mask,mask , getStructuringElement(MORPH_ELLIPSE, Size(10,10))); //might be useful...
   
-  //erode(mask,mask , getStructuringElement(MORPH_ELLIPSE, Size(1,2))); //might be useful...
-  //dilate(mask,mask , getStructuringElement(MORPH_ELLIPSE, Size(1,2))); //might be useful...
   imshow("tmpmask",mask);
 }
+
 
 /********** find the intersections for a given input image ************/
 void findIntersections(string imsname){
 
- 
+
+  
   Mat img = imread(imsname,1); 
 
       if(img.empty()){
@@ -154,20 +169,10 @@ void usage(const char *s){
 #define param 1
 int main( int argc, char** argv){
 
-  if(argc > param+1)
+  if(argc != param+1)
     usage(argv[0]);
-  else if (argc == param+1){
-    findIntersections(argv[1]);
-  }
-  else{
-    for(int i = 0; i<16; i++)
-      {
-	//	clock_t begin = clock();
-	findIntersections("../data/" + imageNames[i]);
-	//	clock_t end = clock();
-	//	cout << "time spent:" << (double) (end - begin) << endl;
-      }
-  }
+  else
+    initProg(argv[1]);
   
   return EXIT_SUCCESS;
 

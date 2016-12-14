@@ -14,9 +14,21 @@ using namespace std;
 
 
 // list of images used for tests
-String imageNames[16] = {"001-rgb.png","0001-rgb.png","34-rgb.png","074-rgb.png","083-rgb.png","094-rgb.png","099-rgb.png","101-rgb.png","147-rgb.png","156-rgb.png","157-rgb.png","164-rgb.png","194-rgb.png","205-rgb.png","264-rgb.png","268-rgb.png"};
+vector<String> imageNames;
 
+void findIntersectionsWithHarris(string imsname);
 
+/********** initialize the list of all image within the folder in parameter ************/
+void initProg(String folder){
+  
+
+    glob(folder, imageNames);
+
+    for(size_t i = 0; i < imageNames.size(); ++i)
+    {
+        findIntersectionsWithHarris(imageNames[i]);
+	}
+}
 
 int isSingleLine(Mat featureWin){
 
@@ -187,20 +199,11 @@ void usage(const char *s){
 #define param 1
 int main( int argc, char** argv){
 
-  if(argc > param+1)
+  if(argc != param+1)
     usage(argv[0]);
-  else if (argc == param+1){
+  else 
     findIntersectionsWithHarris(argv[1]);
-  }
-  else{
-    for(int i = 0; i<16; i++)
-      {
-	//	clock_t begin = clock();
-	findIntersectionsWithHarris("../data/cheat/" + imageNames[i]);
-	//	clock_t end = clock();
-	//	cout << "time spent:" << (double) (end - begin) << endl;
-      }
-  }
+
   
   return EXIT_SUCCESS;
 
